@@ -54,5 +54,91 @@ app.MapGet("/api/arizali-pcler", () =>
     return arizalilar;
 });
 
+// ================================================================
+// HAFTA 4: LINQ ile Veri Sorgulama
+// ================================================================
+
+// --- GET: LAB İSTATİSTİK RAPORU ---
+app.MapGet("/api/lab-istatistik", () =>
+{
+    // 1. WHERE: RAM'i 8'den büyük olan bilgisayarları filtrele
+    var gucluPcler = pcListesi.Where(p => p.Ram > 8).ToList();
+
+    // 2. ORDERBY: Markaya göre A'dan Z'ye alfabetik sırala
+    var siraliPcler = pcListesi.OrderBy(p => p.Marka).ToList();
+
+    // 3. FIRSTORDEFAULT: ID'si 1 olan bilgisayarı getir (bulamazsa null döner, çökmez)
+    var tekPc = pcListesi.FirstOrDefault(p => p.Id == 1);
+
+    // 4. SELECT: Listeden sadece markaları çek
+    var markalar = pcListesi.Select(p => p.Marka).ToList();
+
+    // 5. COUNT: Kaç tane arızalı bilgisayar var?
+    var arizaSayisi = pcListesi.Count(p => p.BozukMu == true);
+
+    // 6. ANY: 32GB RAM'li bilgisayar sistemde var mı?
+    bool canavarVarMi = pcListesi.Any(p => p.Ram == 32);
+
+    // --- MİNİ GÖREV 1: && ile çoklu koşul ---
+    // Hem RAM'i 16 olan HEM DE markası "HP" olan bilgisayar var mı?
+    bool hp16GbVarMi = pcListesi.Any(p => p.Ram == 16 && p.Marka == "HP");
+
+    // --- MİNİ GÖREV 2: RAM'e göre büyükten küçüğe sıralama ---
+    var rameSirali = pcListesi.OrderByDescending(p => p.Ram).ToList();
+
+    // Tüm sonuçları tek pakette döndür (Anonim Nesne)
+    return new
+    {
+        YuksekRamliCihazlar = gucluPcler,
+        AlfabetikListe = siraliPcler,
+        ArananBilgisayar = tekPc,
+        SistemdekiMarkalar = markalar,
+        ToplamAriza = arizaSayisi,
+        LuksPcVarMi = canavarVarMi,
+        HP_16GB_VarMi = hp16GbVarMi,           // Mini Görev 1
+        RameGoreSiralanmis = rameSirali         // Mini Görev 2
+    };
+});
+
+// --- POST: ARIZA BİLDİR ---
+app.MapPost("/api/ariza-bildir", (int pcId) =>
+{
+    // 1. ADIM: Bilgisayarı listede bul
+    var bulunanPc = pcListesi.FirstOrDefault(x => x.Id == pcId);
+
+    // 2. ADIM: Güvenlik kontrolü — Bilgisayar sistemde kayıtlı mı?
+    if (bulunanPc == null)
+    {
+        return Results.NotFound($"Hata: {pcId} numaralı bilgisayar sistemde kayıtlı değil!");
+    }
+
+    // 3. ADIM: Bilgisayarın durumunu arızalı olarak güncelle
+    bulunanPc.BozukMu = true;
+
+    // 4. ADIM: Öncelik hesaplama (RAM ne kadar yüksekse o kadar kritik)
+    string oncelikDurumu;
+    if (bulunanPc.Ram >= 16)
+    {
+        oncelikDurumu = "KRİTİK: Laboratuvarın en güçlü cihazlarından biri arızalandı!";
+    }
+    else
+    {
+        oncelikDurumu = "NORMAL: Standart cihaz arızası.";
+    }
+
+    // --- MİNİ GÖREV: Bilgisayarın listedeki index'ini hesapla ---
+    var index = pcListesi.IndexOf(bulunanPc);
+
+    // 5. ADIM: Sonucu paketleyip döndür
+    return Results.Ok(new
+    {
+        Mesaj = "Arıza kaydı başarıyla oluşturuldu.",
+        Cihaz = bulunanPc.Marka,
+        Oncelik = oncelikDurumu,
+        ListedeKacinciSirada = index,           // Mini Görev
+        KayitTarihi = DateTime.Now.ToShortDateString()
+    });
+});
+
 app.Run();
 // Uygulamayı başlatır ve istekleri dinlemeye başlar.
