@@ -1,0 +1,146 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="section-title mb-0">
+        <i class="fas fa-desktop me-2 text-success"></i>Zimmetli Bilgisayarım
+    </h3>
+</div>
+
+<div id="pcDetails" class="row justify-content-center">
+    <div class="col-md-8 text-center mt-5" id="loadingState">
+        <div class="spinner-border text-success" role="status"></div>
+        <p class="mt-2 text-muted">Bilgisayar bilgileriniz yükleniyor...</p>
+    </div>
+</div>
+
+<script>
+    (async () => {
+        const username = sessionStorage.getItem("username");
+        const res = await fetch(`/api/student/my-pc?username=${username}`);
+        const container = document.getElementById("pcDetails");
+
+        if (res.ok) {
+            const pc = await res.json();
+            container.innerHTML = `
+                <div class="col-md-8">
+                    <div class="card shadow-sm border-0" style="border-top: 4px solid #1cc88a; border-radius: 10px;">
+                        <div class="card-body p-4">
+                            <h4 class="text-success mb-4 text-center">
+                                <i class="fas fa-barcode me-2"></i>${pc.assetCode}
+                            </h4>
+                            
+                            <ul class="list-group list-group-flush text-start">
+                                <li class="list-group-item py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-muted"><i class="fas fa-building me-2"></i>Laboratuvar</div>
+                                        <div class="col-8 fw-bold">Lab-${pc.labId}</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-muted"><i class="fas fa-tag me-2"></i>Marka</div>
+                                        <div class="col-8 fw-bold">${pc.brand || '-'}</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-muted"><i class="fas fa-microchip me-2"></i>İşlemci</div>
+                                        <div class="col-8 fw-bold">${pc.processor || '-'}</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-muted"><i class="fas fa-memory me-2"></i>RAM</div>
+                                        <div class="col-8 fw-bold">${pc.ram} GB</div>
+                                    </div>
+                                </li>
+                                <li class="list-group-item py-3">
+                                    <div class="row align-items-center">
+                                        <div class="col-4 text-muted"><i class="fas fa-plug me-2"></i>Bağlantılar</div>
+                                        <div class="col-8">
+                                            <span class="badge ${pc.hasHdmi ? 'bg-success' : 'bg-secondary'} me-1">HDMI</span>
+                                            <span class="badge ${pc.hasInternet ? 'bg-success' : 'bg-secondary'} me-1">İnternet</span>
+                                            <span class="badge ${pc.hasVeyon ? 'bg-success' : 'bg-secondary'}">Veyon</span>
+                                        </div>
+                                    </div>
+                                </li>
+                            </ul>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 text-center">
+                    <button class="btn btn-warning" onclick="openIssueModal(${pc.id})">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Arıza Bildir
+                    </button>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div class="col-md-8 text-center mt-4">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle fa-2x mb-2"></i><br>
+                        Üzerinize zimmetlenmiş herhangi bir bilgisayar bulunamadı. Lütfen laboratuvar sorumlusu ile iletişime geçin.
+                    </div>
+                </div>
+            `;
+        }
+    })();
+
+    function openIssueModal(pcId) {
+        document.getElementById("issuePcId").value = pcId;
+        document.getElementById("issueDescription").value = "";
+        new bootstrap.Modal(document.getElementById('issueModal')).show();
+    }
+
+    async function submitIssue() {
+        const pcId = document.getElementById("issuePcId").value;
+        const category = document.getElementById("issueCategory").value;
+        const desc = document.getElementById("issueDescription").value;
+
+        if(!desc) { alert("Lütfen arıza açıklamasını giriniz."); return; }
+
+        const res = await fetch("/api/ariza-bildir", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ComputerId: parseInt(pcId), Category: category, Description: desc })
+        });
+
+        if (res.ok) {
+            alert("Arıza başarıyla bildirildi. Admin tarafına iletildi.");
+            bootstrap.Modal.getInstance(document.getElementById('issueModal')).hide();
+        } else {
+            alert("Arıza bildiriminde hata oluştu.");
+        }
+    }
+</script>
+
+<!-- ARIZA BİLDİRİM MODALİ -->
+<div class="modal fade" id="issueModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle me-2"></i>Arıza Bildir</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="issuePcId">
+                <div class="mb-3">
+                    <label class="form-label">Kategori</label>
+                    <select id="issueCategory" class="form-select">
+                        <option value="Donanım">Donanım Arızası (Örn: Ekran kırık, klavye basmıyor)</option>
+                        <option value="Yazılım">Yazılım Arızası (Örn: Sistem açılmıyor, virüs)</option>
+                        <option value="Ağ">Ağ Problemi (Örn: İnternet yok)</option>
+                        <option value="Diğer">Diğer</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Arıza Açıklaması</label>
+                    <textarea id="issueDescription" class="form-control" rows="4" placeholder="Lütfen karşılaştığınız sorunu detaylıca açıklayın..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-warning text-dark fw-bold" onclick="submitIssue()">Gönder</button>
+            </div>
+        </div>
+    </div>
+</div>

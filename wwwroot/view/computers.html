@@ -20,6 +20,7 @@
                 <th>İnternet</th>
                 <th>Veyon</th>
                 <th>Lab ID</th>
+                <th>İşlemler</th>
             </tr>
         </thead>
         <tbody id="pcTableBody">
@@ -37,10 +38,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body row g-3">
-                <div class="col-6">
-                    <label class="form-label">Demirbaş Kodu</label>
-                    <input type="text" id="pcAssetCode" class="form-control" placeholder="Örn: LAB1-PC-01">
-                </div>
+                <!-- Demirbaş kodu artık backend tarafından otomatik üretilecek -->
                 <div class="col-6">
                     <label class="form-label">Marka</label>
                     <input type="text" id="pcBrand" class="form-control" placeholder="Örn: Dell, HP">
@@ -104,6 +102,14 @@
                 <td>${pc.hasInternet ? '✅' : '❌'}</td>
                 <td>${pc.hasVeyon ? '✅' : '❌'}</td>
                 <td><span class="badge bg-primary">Lab-${pc.labId}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-success" onclick="openAssignModal(${pc.id})">
+                        <i class="fas fa-user-plus me-1"></i>Ata
+                    </button>
+                    <button class="btn btn-sm btn-danger ms-1" onclick="deletePc(${pc.id})">
+                        <i class="fas fa-trash me-1"></i>Sil
+                    </button>
+                </td>
             </tr>
         `).join("");
     }
@@ -119,7 +125,7 @@
 
     async function savePc() {
         const pc = {
-            assetCode: document.getElementById("pcAssetCode").value,
+            // assetCode artık gönderilmiyor, backend otomatik üretecek
             brand: document.getElementById("pcBrand").value,
             processor: document.getElementById("pcProcessor").value,
             ram: parseInt(document.getElementById("pcRam").value),
@@ -153,4 +159,88 @@
 
     getPcs();
     loadLabOptions();
+
+    // Sorumluluk Atama Fonksiyonları
+    function openAssignModal(pcId) {
+        document.getElementById("assignPcId").value = pcId;
+        document.getElementById("studentName").value = "";
+        document.getElementById("studentNumber").value = "";
+        new bootstrap.Modal(document.getElementById('assignModal')).show();
+    }
+
+    async function assignStudent() {
+        const pcId = document.getElementById("assignPcId").value;
+        const name = document.getElementById("studentName").value;
+        const number = document.getElementById("studentNumber").value;
+
+        if(!name || !number) { alert("Lütfen ad soyad ve öğrenci no giriniz."); return; }
+
+        const res = await fetch("/api/admin/assign", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ FullName: name, StudentNumber: number, ComputerId: parseInt(pcId) })
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            alert(`${data.message}\n\nGiriş Bilgileri:\nKullanıcı Adı: ${data.username}\nŞifre: ${data.password}`);
+            bootstrap.Modal.getInstance(document.getElementById('assignModal')).hide();
+        } else {
+            let errorMsg = "Atama işlemi başarısız oldu.";
+            try {
+                // Backend'den gelen BadRequest string yanıtını okumaya çalış
+                errorMsg = await res.text();
+            } catch(e) {}
+            
+            // Eğer yanıt JSON objesiyse ve message alanı varsa onu al
+            try {
+                const errObj = JSON.parse(errorMsg);
+                if(errObj.message) errorMsg = errObj.message;
+            } catch(e) {}
+
+            alert("HATA: " + errorMsg.replace(/"/g, ''));
+        }
+    }
+
+    // Bilgisayar Silme Fonksiyonu
+    async function deletePc(id) {
+        if(confirm("Bu bilgisayarı silmek istediğinize emin misiniz?")) {
+            const res = await fetch("/api/bilgisayar/" + id, { method: "DELETE" });
+            if(res.ok) {
+                getPcs();
+            } else {
+                alert("Silme işlemi başarısız.");
+            }
+        }
+    }
 </script>
+
+<!-- ÖĞRENCİ ATAMA MODALİ -->
+<div class="modal fade" id="assignModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-user-graduate me-2"></i>Öğrenci Ata</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="assignPcId">
+                <div class="mb-3">
+                    <label class="form-label">Öğrenci Adı Soyadı</label>
+                    <input type="text" id="studentName" class="form-control" placeholder="Örn: Ali Yılmaz">
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Öğrenci No</label>
+                    <input type="text" id="studentNumber" class="form-control" placeholder="Örn: 20240101">
+                </div>
+                <div class="alert alert-info py-2">
+                    <small><i class="fas fa-info-circle me-1"></i>Sisteme giriş hesabı otomatik oluşturulacaktır.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <button type="button" class="btn btn-success" onclick="assignStudent()">Zimmetle</button>
+            </div>
+        </div>
+    </div>
+</div>

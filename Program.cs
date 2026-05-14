@@ -26,93 +26,6 @@ app.UseStaticFiles();
 app.UseSwagger();
 app.UseSwaggerUI();
 
-// ================================================================
-// BİLGİSAYAR ENDPOINT'LERİ
-// ================================================================
-
-// GET: Tüm bilgisayarları getir
-app.MapGet("/api/bilgisayarlar", async (AppDbContext context) =>
-{
-    return await context.Computers.ToListAsync();
-});
-
-// GET: ID'ye göre tek bilgisayar
-app.MapGet("/api/bilgisayar/{id}", async (AppDbContext context, int id) =>
-{
-    var bulunan = await context.Computers.FindAsync(id);
-    if (bulunan == null)
-        return Results.NotFound($"{id} numaralı bilgisayar bulunamadı.");
-    return Results.Ok(bulunan);
-});
-
-// POST: Yeni bilgisayar ekle
-app.MapPost("/api/bilgisayar-ekle", async (AppDbContext context, Computer yeniPc) =>
-{
-    context.Computers.Add(yeniPc);
-    await context.SaveChangesAsync();
-    return Results.Ok(yeniPc);
-});
-
-// GET: Arızalı bilgisayarlar (Issues tablosunda çözülmemiş kaydı olanlar)
-app.MapGet("/api/arizali-pcler", async (AppDbContext context) =>
-{
-    // Issues tablosunda IsResolved=false olan PC ID'lerini bul
-    var arizaliPcIdleri = await context.Issues
-        .Where(i => i.IsResolved == false)
-        .Select(i => i.ComputerId)
-        .Distinct()
-        .ToListAsync();
-
-    // O bilgisayarları getir
-    var arizalilar = await context.Computers
-        .Where(pc => arizaliPcIdleri.Contains(pc.Id))
-        .ToListAsync();
-
-    return arizalilar;
-});
-
-// ================================================================
-// LAB ENDPOINT'LERİ (Modüllere Taşındı)
-// ================================================================
-
-// ================================================================
-// ARIZA KAYDI ENDPOINT'LERİ
-// ================================================================
-
-// POST: Arıza bildir (Issue tablosuna kayıt oluştur)
-app.MapPost("/api/ariza-bildir", async (AppDbContext context, Issue yeniAriza) =>
-{
-    var pc = await context.Computers.FindAsync(yeniAriza.ComputerId);
-    if (pc == null)
-        return Results.NotFound($"Hata: {yeniAriza.ComputerId} numaralı bilgisayar bulunamadı!");
-
-    // Öncelik hesaplama
-    string oncelik = pc.Ram >= 16
-        ? "KRİTİK: Güçlü cihaz arızası!"
-        : "NORMAL: Standart cihaz arızası.";
-
-    context.Issues.Add(yeniAriza);
-    await context.SaveChangesAsync();
-
-    return Results.Ok(new
-    {
-        Mesaj = "Arıza kaydı oluşturuldu.",
-        Cihaz = pc.Brand,
-        Oncelik = oncelik,
-        ArizaId = yeniAriza.Id
-    });
-});
-
-// GET: Tüm arıza kayıtları
-app.MapGet("/api/arizalar", async (AppDbContext context) =>
-{
-    return await context.Issues.ToListAsync();
-});
-
-// ================================================================
-// HAFTA 4: LINQ ile Veri Sorgulama (Yeni alan adlarıyla güncellendi)
-// ================================================================
-
 app.MapGet("/api/lab-istatistik", async (AppDbContext context) =>
 {
     var tumListe = await context.Computers.ToListAsync();
@@ -154,5 +67,9 @@ app.MapGet("/api/lab-istatistik", async (AppDbContext context) =>
 app.MapAuthEndpoints();
 app.MapStatEndpoints();
 app.MapLabEndpoints();
+app.MapComputerEndpoints();
+app.MapAssignEndpoints();
+app.MapStudentEndpoints();
+app.MapIssueEndpoints();
 
 app.Run();

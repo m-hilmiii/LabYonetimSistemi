@@ -1,0 +1,75 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="section-title mb-0">
+        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Arıza Kayıtları
+    </h3>
+</div>
+
+<div class="card p-3 shadow-sm border-0">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Demirbaş Kodu</th>
+                <th>Kategori</th>
+                <th>Açıklama</th>
+                <th>Durum</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody id="issuesTableBody">
+            <tr><td colspan="6" class="text-center text-muted py-3">Yükleniyor...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    async function getIssues() {
+        const res = await fetch("/api/arizalar");
+        const tbody = document.getElementById("issuesTableBody");
+        
+        if (res.ok) {
+            const issues = await res.json();
+            if (issues.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">Sistemde kayıtlı arıza bulunmuyor.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = issues.map(i => `
+                <tr>
+                    <td>#${i.id}</td>
+                    <td>
+                        <span class="badge bg-dark me-1">Lab-${i.labId}</span>
+                        <span class="badge bg-primary">${i.assetCode}</span>
+                    </td>
+                    <td><span class="badge bg-secondary">${i.category}</span></td>
+                    <td>${i.description}</td>
+                    <td>
+                        ${i.isResolved 
+                            ? '<span class="badge bg-success"><i class="fas fa-check-circle me-1"></i>Çözüldü</span>' 
+                            : '<span class="badge bg-warning text-dark"><i class="fas fa-clock me-1"></i>Açık</span>'
+                        }
+                    </td>
+                    <td>
+                        ${!i.isResolved ? `
+                            <button class="btn btn-sm btn-success" onclick="resolveIssue(${i.id})">
+                                <i class="fas fa-check"></i> Çöz
+                            </button>
+                        ` : '<span class="text-muted"><i class="fas fa-minus"></i></span>'}
+                    </td>
+                </tr>
+            `).join("");
+        }
+    }
+
+    async function resolveIssue(id) {
+        if(confirm("Bu arızayı çözüldü olarak işaretlemek istiyor musunuz?")) {
+            const res = await fetch(`/api/arizalar/${id}/resolve`, { method: "PUT" });
+            if (res.ok) {
+                getIssues();
+            } else {
+                alert("İşlem başarısız oldu.");
+            }
+        }
+    }
+
+    getIssues();
+</script>

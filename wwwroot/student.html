@@ -2,13 +2,7 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>LRP Admin Panel</title>
-    <script>
-        // YETKİ KONTROLÜ (Auth Guard)
-        if (sessionStorage.getItem("userRole") !== "Admin") {
-            window.location.href = "/login.html";
-        }
-    </script>
+    <title>LRP Öğrenci Portalı</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
     <style>
@@ -16,7 +10,7 @@
         .sidebar { 
             width: 250px; 
             min-height: 100vh; 
-            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            background: linear-gradient(180deg, #1cc88a 0%, #13855c 100%); /* Öğrenci için Yeşil Degrade */
             position: fixed; 
             color: white; 
             padding: 1.5rem;
@@ -37,39 +31,29 @@
         .text-danger { color: #ff6b6b !important; }
         .text-danger:hover { background-color: rgba(255, 107, 107, 0.15) !important; color: #ff6b6b !important; }
     </style>
+    <script>
+        // YETKİ KONTROLÜ (Auth Guard)
+        if (sessionStorage.getItem("userRole") !== "Student") {
+            window.location.href = "/login.html";
+        }
+    </script>
 </head>
 <body>
     <div class="sidebar shadow">
         <div class="text-center mb-4 pt-2">
-            <i class="fas fa-desktop fa-2x mb-2"></i>
+            <i class="fas fa-user-graduate fa-2x mb-2"></i>
             <h5 class="mb-0">Lab-Takip</h5>
-            <small class="opacity-75">Admin Paneli</small>
+            <small class="opacity-75">Öğrenci Portalı</small>
         </div>
         <hr class="border-light">
+        <div class="text-center mb-3">
+            <small class="opacity-75">Hoş Geldin,</small><br>
+            <strong id="displayUsername"></strong>
+        </div>
         <ul class="nav flex-column gap-1" id="main-nav">
             <li class="nav-item">
-                <a class="nav-link active" onclick="loadPage('/view/dashboard.html', this)">
-                    <i class="fas fa-tachometer-alt me-2"></i> Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="loadPage('/view/labs.html', this)">
-                    <i class="fas fa-door-open me-2"></i> Laboratuvarlar
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="loadPage('/view/computers.html', this)">
-                    <i class="fas fa-laptop me-2"></i> Bilgisayarlar
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" onclick="loadPage('/view/students.html', this)">
-                    <i class="fas fa-users me-2"></i> Öğrenciler
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link text-warning" onclick="loadPage('/view/issues.html', this)">
-                    <i class="fas fa-exclamation-triangle me-2"></i> Arıza Kayıtları
+                <a class="nav-link active" onclick="loadPage('/view/my-pc.html', this)">
+                    <i class="fas fa-laptop-code me-2"></i> Zimmetli PC
                 </a>
             </li>
             <li class="nav-item mt-5">
@@ -88,18 +72,18 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        document.getElementById("displayUsername").innerText = sessionStorage.getItem("username");
+
         async function loadPage(url, element) {
-            // Tarayıcının eski sayfayı getirmesini engellemek için url'nin sonuna rastgele sayı (timestamp) ekliyoruz
+            // Tarayıcı önbelleğini kırmak için
             const res = await fetch(url + '?t=' + new Date().getTime());
             document.getElementById("page-content").innerHTML = await res.text();
 
-            // Aktif menü rengini güncelle
             if (element) {
                 document.querySelectorAll('#main-nav .nav-link').forEach(link => link.classList.remove('active'));
                 element.classList.add('active');
             }
 
-            // Scriptleri çalıştır
             const scripts = document.getElementById("page-content").querySelectorAll("script");
             scripts.forEach(s => {
                 const newS = document.createElement("script");
@@ -107,8 +91,8 @@
                 document.body.appendChild(newS).parentNode.removeChild(newS);
             });
         }
-        // İlk açılışta Dashboard gelsin
-        window.onload = () => loadPage('/view/dashboard.html', document.querySelector('.nav-link.active'));
+        
+        window.onload = () => loadPage('/view/my-pc.html', document.querySelector('.nav-link.active'));
     </script>
 </body>
 </html>

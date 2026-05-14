@@ -29,8 +29,8 @@
 
             if (res.ok) {
                 const data = await res.json();
-                localStorage.setItem("userRole", data.role);
-                localStorage.setItem("username", data.username);
+                sessionStorage.setItem("userRole", data.role);
+                sessionStorage.setItem("username", data.username);
                 location.href = data.role === "Admin" ? "/index.html" : "/student.html";
             } else {
                 alert("Giriş Başarısız!");
