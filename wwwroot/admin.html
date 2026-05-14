@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Yönetim | Admin Paneli</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/all.min.css">
+    <style>
+        body { background-color: #f0f2f5; }
+
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #4e73df 0%, #224abe 100%);
+            color: white;
+            position: sticky;
+            top: 0;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255,255,255,.75);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: white;
+            background-color: rgba(255,255,255,.15);
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        }
+
+        .stat-card {
+            border-left: 4px solid;
+            border-radius: 10px;
+        }
+
+        .stat-card.blue   { border-color: #4e73df; }
+        .stat-card.green  { border-color: #1cc88a; }
+        .stat-card.yellow { border-color: #f6c23e; }
+        .stat-card.red    { border-color: #e74a3b; }
+
+        .section-title {
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+
+        .table thead th {
+            background-color: #f8f9fa;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container-fluid p-0">
+    <div class="row g-0">
+
+        <!-- SIDEBAR -->
+        <nav class="col-md-2 sidebar p-3">
+            <div class="text-center mb-4 pt-2">
+                <i class="fas fa-desktop fa-2x mb-2"></i>
+                <h5 class="mb-0">Lab-Takip</h5>
+                <small class="opacity-75">Admin Paneli</small>
+            </div>
+            <hr class="border-light">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" onclick="showSection('dashboardSection', this)">
+                        <i class="fas fa-tachometer-alt me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('labSection', this)">
+                        <i class="fas fa-door-open me-2"></i> Laboratuvarlar
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" onclick="showSection('pcSection', this)">
+                        <i class="fas fa-laptop me-2"></i> Bilgisayarlar
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- MAIN CONTENT -->
+        <main class="col-md-10 p-4">
+
+            <!-- DASHBOARD -->
+            <div id="dashboardSection" class="admin-section">
+                <h3 class="section-title"><i class="fas fa-tachometer-alt me-2 text-primary"></i>Dashboard</h3>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card stat-card blue p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">Toplam Lab</div>
+                                    <div class="fs-3 fw-bold" id="statLabCount">-</div>
+                                </div>
+                                <i class="fas fa-door-open fa-2x text-primary opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card green p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">Toplam Bilgisayar</div>
+                                    <div class="fs-3 fw-bold" id="statPcCount">-</div>
+                                </div>
+                                <i class="fas fa-laptop fa-2x text-success opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card yellow p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">Açık Arızalar</div>
+                                    <div class="fs-3 fw-bold" id="statIssueCount">-</div>
+                                </div>
+                                <i class="fas fa-exclamation-triangle fa-2x text-warning opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card stat-card red p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">HDMI'sız PC</div>
+                                    <div class="fs-3 fw-bold" id="statNoHdmi">-</div>
+                                </div>
+                                <i class="fas fa-plug fa-2x text-danger opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- LAB YÖNETİMİ -->
+            <div id="labSection" class="admin-section" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="section-title mb-0">
+                        <i class="fas fa-door-open me-2 text-primary"></i>Laboratuvar Yönetimi
+                    </h3>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addLabModal">
+                        <i class="fas fa-plus me-1"></i> Yeni Lab Ekle
+                    </button>
+                </div>
+                <div class="card p-3">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Lab Adı</th>
+                                <th>PC Sayısı</th>
+                            </tr>
+                        </thead>
+                        <tbody id="labTableBody">
+                            <tr><td colspan="3" class="text-center text-muted py-3">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- BİLGİSAYAR YÖNETİMİ -->
+            <div id="pcSection" class="admin-section" style="display:none;">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h3 class="section-title mb-0">
+                        <i class="fas fa-laptop me-2 text-primary"></i>Bilgisayar Tanımlama
+                    </h3>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPcModal">
+                        <i class="fas fa-plus me-1"></i> Yeni PC Ekle
+                    </button>
+                </div>
+                <div class="card p-3">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Demirbaş Kodu</th>
+                                <th>Marka</th>
+                                <th>İşlemci</th>
+                                <th>RAM</th>
+                                <th>HDMI</th>
+                                <th>İnternet</th>
+                                <th>Veyon</th>
+                                <th>Lab ID</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pcTableBody">
+                            <tr><td colspan="9" class="text-center text-muted py-3">Yükleniyor...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<!-- YENİ LAB MODALİ -->
+<div class="modal fade" id="addLabModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-door-open me-2"></i>Yeni Lab Kaydı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <label class="form-label fw-semibold">Lab Adı</label>
+                <input type="text" id="newLabName" class="form-control" placeholder="Örn: Lab-A, Lab-B">
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-primary" onclick="saveLab()">
+                    <i class="fas fa-save me-1"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- YENİ BİLGİSAYAR MODALİ -->
+<div class="modal fade" id="addPcModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-laptop me-2"></i>Yeni Bilgisayar Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body row g-3">
+                <div class="col-6">
+                    <label class="form-label">Demirbaş Kodu</label>
+                    <input type="text" id="pcAssetCode" class="form-control" placeholder="LAB1-PC-01">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Marka</label>
+                    <input type="text" id="pcBrand" class="form-control" placeholder="Dell, HP...">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">İşlemci</label>
+                    <input type="text" id="pcProcessor" class="form-control" placeholder="Intel Core i5">
+                </div>
+                <div class="col-3">
+                    <label class="form-label">RAM (GB)</label>
+                    <input type="number" id="pcRam" class="form-control" value="8">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Laboratuvar Seçimi</label>
+                    <select id="pcLabId" class="form-select">
+                        <!-- Lab listesi buraya JavaScript ile yüklenecek -->
+                    </select>
+                </div>
+                <div class="col-12">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="pcHasHdmi">
+                        <label class="form-check-label">HDMI Var</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="pcHasInternet" checked>
+                        <label class="form-check-label">İnternet Var</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="pcHasVeyon">
+                        <label class="form-check-label">Veyon Yüklü</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-primary" onclick="savePc()">
+                    <i class="fas fa-save me-1"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // --- BÖLÜM GÖSTERİCİ ---
+    function showSection(id, element) {
+        document.querySelectorAll('.admin-section').forEach(s => s.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
+        if (id === 'labSection') getLabs();
+        if (id === 'pcSection') getPcs();
+
+        // Aktif menü rengini güncelle
+        if (element) {
+            document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+            element.classList.add('active');
+        }
+    }
+
+    // --- LAB İŞLEMLERİ ---
+    async function getLabs() {
+        const res = await fetch("/api/labs");
+        const labs = await res.json();
+        
+        // 1. Tabloyu doldur
+        const tbody = document.getElementById("labTableBody");
+        if (labs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Henüz lab eklenmedi.</td></tr>';
+        } else {
+            tbody.innerHTML = labs.map(l => `
+                <tr>
+                    <td><span class="badge bg-secondary">${l.id}</span></td>
+                    <td><strong>${l.name}</strong></td>
+                    <td>${l.computers ? l.computers.length : 0} bilgisayar</td>
+                </tr>
+            `).join("");
+        }
+        document.getElementById("statLabCount").textContent = labs.length;
+
+        // 2. Yeni Bilgisayar Ekleme Modalındaki açılır listeyi doldur
+        const pcLabSelect = document.getElementById("pcLabId");
+        if (pcLabSelect) {
+            pcLabSelect.innerHTML = labs.map(l => `<option value="${l.id}">${l.name}</option>`).join("");
+        }
+    }
+
+    async function saveLab() {
+        const name = document.getElementById("newLabName").value.trim();
+        if (!name) { alert("Lab adı boş olamaz!"); return; }
+
+        const res = await fetch("/api/admin/labs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: name })
+        });
+
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('addLabModal')).hide();
+            document.getElementById("newLabName").value = "";
+            getLabs();
+        } else {
+            alert("Hata oluştu!");
+        }
+    }
+
+    // --- BİLGİSAYAR İŞLEMLERİ ---
+    async function getPcs() {
+        const res = await fetch("/api/bilgisayarlar");
+        const pcs = await res.json();
+        const tbody = document.getElementById("pcTableBody");
+        if (pcs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Henüz bilgisayar eklenmedi.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = pcs.map(pc => `
+            <tr>
+                <td>${pc.id}</td>
+                <td><code>${pc.assetCode || '-'}</code></td>
+                <td>${pc.brand || '-'}</td>
+                <td>${pc.processor || '-'}</td>
+                <td>${pc.ram} GB</td>
+                <td>${pc.hasHdmi ? '✅' : '❌'}</td>
+                <td>${pc.hasInternet ? '✅' : '❌'}</td>
+                <td>${pc.hasVeyon ? '✅' : '❌'}</td>
+                <td>${pc.labId}</td>
+            </tr>
+        `).join("");
+        document.getElementById("statPcCount").textContent = pcs.length;
+        document.getElementById("statNoHdmi").textContent = pcs.filter(p => !p.hasHdmi).length;
+    }
+
+    async function savePc() {
+        const pc = {
+            assetCode: document.getElementById("pcAssetCode").value,
+            brand: document.getElementById("pcBrand").value,
+            processor: document.getElementById("pcProcessor").value,
+            ram: parseInt(document.getElementById("pcRam").value),
+            labId: parseInt(document.getElementById("pcLabId").value),
+            hasHdmi: document.getElementById("pcHasHdmi").checked,
+            hasInternet: document.getElementById("pcHasInternet").checked,
+            hasVeyon: document.getElementById("pcHasVeyon").checked
+        };
+
+        const res = await fetch("/api/bilgisayar-ekle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pc)
+        });
+
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('addPcModal')).hide();
+            getPcs();
+        } else {
+            alert("Hata oluştu!");
+        }
+    }
+
+    // --- AÇIK ARIZALARI YÜKLE ---
+    async function getIssues() {
+        const res = await fetch("/api/arizalar");
+        const issues = await res.json();
+        document.getElementById("statIssueCount").textContent =
+            issues.filter(i => !i.isResolved).length;
+    }
+
+    // Sayfa açılınca dashboard verilerini yükle
+    getLabs();
+    getPcs();
+    getIssues();
+</script>
+</body>
+</html>

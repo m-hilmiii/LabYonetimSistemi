@@ -1,111 +1,165 @@
-using LabApi.Data;                  // AppDbContext sınıfına erişim
-using LabApi.Models;                // Computer sınıfına erişim
-using Microsoft.EntityFrameworkCore; // EF Core özellikleri için
+using LabApi.Data;
+using LabApi.Models;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
-// Uygulama ayarlarını başlatan inşaatçı nesnesi.
 
-// --- 1. SERVİS KAYITLARI (builder.Build'den önce olmalı) ---
+// --- 1. SERVİS KAYITLARI ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// Veritabanı servisini sisteme tanıtıyoruz.
-// appsettings.json'daki "DefaultConnection" satırını okuyup SQLite'a bağlanır.
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
-// İnşaatçının hazırladığı ayarlar ile gerçek uygulamayı (app) oluşturur.
 
 // --- OTOMATİK VERİTABANI KURULUMU ---
-// Uygulama her başladığında veritabanını kontrol eder, yoksa oluşturur.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate(); // Migration'ları uygula (tablo yoksa oluşturur)
+    db.Database.Migrate();
 }
 
-// --- 2. MIDDLEWARE (ARA YAZILIM) AYARLARI ---
-
+// --- 2. MIDDLEWARE ---
 app.UseDefaultFiles();
-// Tarayıcıya "localhost:xxxx" yazıldığında wwwroot/index.html'i otomatik bulur ve açar.
-
 app.UseStaticFiles();
-// wwwroot klasörü içindeki dosyaların (html, css, js) dışarıya sunulmasına izin verir.
-
 app.UseSwagger();
-app.UseSwaggerUI(); // Swagger arayüzünü /swagger adresinde açar
+app.UseSwaggerUI();
 
 // ================================================================
-// TEMEL ENDPOINT'LER — Artık RAM'deki liste değil, VERİTABANI kullanılıyor
+// BİLGİSAYAR ENDPOINT'LERİ
 // ================================================================
 
-// --- GET: TÜM LİSTEYİ GETİR ---
+// GET: Tüm bilgisayarları getir
 app.MapGet("/api/bilgisayarlar", async (AppDbContext context) =>
 {
-    // context.Computers: Veritabanındaki tabloya git.
-    // ToListAsync(): Tüm satırları asenkron (hızlı) şekilde liste olarak getir.
     return await context.Computers.ToListAsync();
 });
 
-// --- GET: TEK BİR BİLGİSAYAR GETİR (ID ile) ---
+// GET: ID'ye göre tek bilgisayar
 app.MapGet("/api/bilgisayar/{id}", async (AppDbContext context, int id) =>
 {
     var bulunan = await context.Computers.FindAsync(id);
-    // FindAsync: Birincil anahtara (Id) göre arama yapar. Bulamazsa null döner.
     if (bulunan == null)
         return Results.NotFound($"{id} numaralı bilgisayar bulunamadı.");
     return Results.Ok(bulunan);
 });
 
-// --- POST: YENİ BİLGİSAYAR EKLE ---
+// POST: Yeni bilgisayar ekle
 app.MapPost("/api/bilgisayar-ekle", async (AppDbContext context, Computer yeniPc) =>
 {
-    context.Computers.Add(yeniPc);       // Yeni nesneyi tabloya ekle (henüz kaydedilmedi).
-    await context.SaveChangesAsync();    // Değişiklikleri veritabanı dosyasına fiziksel olarak işle.
+    context.Computers.Add(yeniPc);
+    await context.SaveChangesAsync();
     return Results.Ok(yeniPc);
 });
 
-// --- GET: ARIZALI BİLGİSAYARLARI GETİR ---
+// GET: Arızalı bilgisayarlar (Issues tablosunda çözülmemiş kaydı olanlar)
 app.MapGet("/api/arizali-pcler", async (AppDbContext context) =>
 {
-    var arizalilar = await context.Computers
-        .Where(pc => pc.BozukMu == true)
+    // Issues tablosunda IsResolved=false olan PC ID'lerini bul
+    var arizaliPcIdleri = await context.Issues
+        .Where(i => i.IsResolved == false)
+        .Select(i => i.ComputerId)
+        .Distinct()
         .ToListAsync();
+
+    // O bilgisayarları getir
+    var arizalilar = await context.Computers
+        .Where(pc => arizaliPcIdleri.Contains(pc.Id))
+        .ToListAsync();
+
     return arizalilar;
 });
 
 // ================================================================
-// HAFTA 4: LINQ ile Veri Sorgulama
+// LAB ENDPOINT'LERİ
 // ================================================================
 
-// --- GET: LAB İSTATİSTİK RAPORU ---
+// GET: Tüm labları bilgisayarlarıyla birlikte getir
+app.MapGet("/api/labs", async (AppDbContext context) =>
+{
+    return await context.Labs.Include(l => l.Computers).ToListAsync();
+    // Include: "Labları getirirken ona ait bilgisayarları da birlikte getir" demektir.
+});
+
+// GET: ID'ye göre tek lab
+app.MapGet("/api/labs/{id}", async (AppDbContext context, int id) =>
+{
+    var lab = await context.Labs.Include(l => l.Computers).FirstOrDefaultAsync(l => l.Id == id);
+    if (lab == null)
+        return Results.NotFound($"{id} numaralı lab bulunamadı.");
+    return Results.Ok(lab);
+});
+
+// POST: Yeni lab ekle (Admin)
+app.MapPost("/api/admin/labs", async (AppDbContext context, Lab yeniLab) =>
+{
+    context.Labs.Add(yeniLab);
+    await context.SaveChangesAsync();
+    return Results.Ok(yeniLab);
+});
+
+// ================================================================
+// ARIZA KAYDI ENDPOINT'LERİ
+// ================================================================
+
+// POST: Arıza bildir (Issue tablosuna kayıt oluştur)
+app.MapPost("/api/ariza-bildir", async (AppDbContext context, Issue yeniAriza) =>
+{
+    var pc = await context.Computers.FindAsync(yeniAriza.ComputerId);
+    if (pc == null)
+        return Results.NotFound($"Hata: {yeniAriza.ComputerId} numaralı bilgisayar bulunamadı!");
+
+    // Öncelik hesaplama
+    string oncelik = pc.Ram >= 16
+        ? "KRİTİK: Güçlü cihaz arızası!"
+        : "NORMAL: Standart cihaz arızası.";
+
+    context.Issues.Add(yeniAriza);
+    await context.SaveChangesAsync();
+
+    return Results.Ok(new
+    {
+        Mesaj = "Arıza kaydı oluşturuldu.",
+        Cihaz = pc.Brand,
+        Oncelik = oncelik,
+        ArizaId = yeniAriza.Id
+    });
+});
+
+// GET: Tüm arıza kayıtları
+app.MapGet("/api/arizalar", async (AppDbContext context) =>
+{
+    return await context.Issues.ToListAsync();
+});
+
+// ================================================================
+// HAFTA 4: LINQ ile Veri Sorgulama (Yeni alan adlarıyla güncellendi)
+// ================================================================
+
 app.MapGet("/api/lab-istatistik", async (AppDbContext context) =>
 {
     var tumListe = await context.Computers.ToListAsync();
 
-    // 1. WHERE: RAM'i 8'den büyük olan bilgisayarları filtrele
+    // 1. WHERE: RAM'i 8'den büyük olanlar
     var gucluPcler = tumListe.Where(p => p.Ram > 8).ToList();
 
-    // 2. ORDERBY: Markaya göre A'dan Z'ye alfabetik sırala
-    var siraliPcler = tumListe.OrderBy(p => p.Marka).ToList();
+    // 2. ORDERBY: Markaya göre A'dan Z'ye
+    var siraliPcler = tumListe.OrderBy(p => p.Brand).ToList();
 
-    // 3. FIRSTORDEFAULT: ID'si 1 olan bilgisayarı getir (bulamazsa null döner, çökmez)
+    // 3. FIRSTORDEFAULT: ID'si 1 olan
     var tekPc = tumListe.FirstOrDefault(p => p.Id == 1);
 
-    // 4. SELECT: Listeden sadece markaları çek
-    var markalar = tumListe.Select(p => p.Marka).ToList();
+    // 4. SELECT: Sadece markaları çek
+    var markalar = tumListe.Select(p => p.Brand).ToList();
 
-    // 5. COUNT: Kaç tane arızalı bilgisayar var?
-    var arizaSayisi = tumListe.Count(p => p.BozukMu == true);
+    // 5. COUNT: HDMI'ı olan kaç bilgisayar var?
+    var hdmiSayisi = tumListe.Count(p => p.HasHdmi == true);
 
-    // 6. ANY: 32GB RAM'li bilgisayar sistemde var mı?
+    // 6. ANY: 32GB RAM'li bilgisayar var mı?
     bool canavarVarMi = tumListe.Any(p => p.Ram == 32);
 
-    // Mini Görev 1: Hem RAM'i 16 olan HEM DE markası "HP" olan var mı?
-    bool hp16GbVarMi = tumListe.Any(p => p.Ram == 16 && p.Marka == "HP");
-
-    // Mini Görev 2: RAM'e göre büyükten küçüğe sıralama
+    // 7. RAM'e göre büyükten küçüğe sırala
     var rameSirali = tumListe.OrderByDescending(p => p.Ram).ToList();
 
     return new
@@ -114,44 +168,10 @@ app.MapGet("/api/lab-istatistik", async (AppDbContext context) =>
         AlfabetikListe = siraliPcler,
         ArananBilgisayar = tekPc,
         SistemdekiMarkalar = markalar,
-        ToplamAriza = arizaSayisi,
+        HdmiluCihazSayisi = hdmiSayisi,
         LuksPcVarMi = canavarVarMi,
-        HP_16GB_VarMi = hp16GbVarMi,
         RameGoreSiralanmis = rameSirali
     };
 });
 
-// --- POST: ARIZA BİLDİR ---
-app.MapPost("/api/ariza-bildir", async (AppDbContext context, int pcId) =>
-{
-    // 1. ADIM: Bilgisayarı veritabanında bul
-    var bulunanPc = await context.Computers.FindAsync(pcId);
-
-    // 2. ADIM: Güvenlik kontrolü
-    if (bulunanPc == null)
-        return Results.NotFound($"Hata: {pcId} numaralı bilgisayar sistemde kayıtlı değil!");
-
-    // 3. ADIM: Durumu güncelle
-    bulunanPc.BozukMu = true;
-
-    // 4. ADIM: Öncelik hesaplama
-    string oncelikDurumu;
-    if (bulunanPc.Ram >= 16)
-        oncelikDurumu = "KRİTİK: Laboratuvarın en güçlü cihazlarından biri arızalandı!";
-    else
-        oncelikDurumu = "NORMAL: Standart cihaz arızası.";
-
-    // 5. ADIM: Değişikliği veritabanına kaydet
-    await context.SaveChangesAsync();
-
-    return Results.Ok(new
-    {
-        Mesaj = "Arıza kaydı başarıyla oluşturuldu.",
-        Cihaz = bulunanPc.Marka,
-        Oncelik = oncelikDurumu,
-        KayitTarihi = DateTime.Now.ToShortDateString()
-    });
-});
-
 app.Run();
-// Uygulamayı başlatır ve istekleri dinlemeye başlar.

@@ -145,15 +145,16 @@
             veriler.forEach(pc => {
                 const kart = document.createElement("div");
 
-                // bozukMu durumuna göre CSS sınıfı atıyoruz (Ternary Operator)
-                kart.className = pc.bozukMu ? "pc-kart arizali" : "pc-kart saglam";
+                // Artık "bozukMu" yok, o yüzden varsayılan olarak sağlam stilini veriyoruz
+                kart.className = "pc-kart saglam";
 
                 kart.innerHTML = `
-                    <h3>💻 ${pc.marka}</h3>
-                    <p>🔧 <strong>İşlemci:</strong> ${pc.processor}</p>
+                    <h3>💻 ${pc.brand || 'Bilinmiyor'}</h3>
+                    <p>🔧 <strong>İşlemci:</strong> ${pc.processor || 'Bilinmiyor'}</p>
                     <p>🧠 <strong>RAM:</strong> ${pc.ram} GB</p>
+                    <p>🌐 <strong>İnternet:</strong> ${pc.hasInternet ? "Var" : "Yok"}</p>
                     <span class="durum-etiketi">
-                        ${pc.bozukMu ? "⚠️ ARIZALI" : "✅ ÇALIŞIYOR"}
+                        ${pc.assetCode || 'KOD YOK'}
                     </span>
                 `;
 
