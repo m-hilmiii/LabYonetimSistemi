@@ -18,8 +18,11 @@ app.UseSwaggerUI();
 // Veritabanı öğrenene kadar kullanacağımız geçici listemiz (RAM üzerinde tutulur)
 var pcListesi = new List<Computer>
 {
-    new Computer { Id = 1, Brand = "Monster", Ram = 16, HasIssue = false },
-    new Computer { Id = 2, Brand = "Lenovo", Ram = 8, HasIssue = true }
+    new Computer { Id = 1, Marka = "Monster", Processor = "Intel Core i7", Ram = 16, BozukMu = false },
+    new Computer { Id = 2, Marka = "Lenovo", Processor = "Intel Core i5", Ram = 8, BozukMu = true },
+    new Computer { Id = 3, Marka = "HP", Processor = "AMD Ryzen 5", Ram = 8, BozukMu = false },
+    new Computer { Id = 4, Marka = "Acer", Processor = "Intel Core i3", Ram = 4, BozukMu = false },
+    new Computer { Id = 5, Marka = "MSI", Processor = "AMD Ryzen 7", Ram = 32, BozukMu = false }
 };
 
 // --- GET: TÜM LİSTEYİ GETİR ---
