@@ -1,0 +1,78 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3>Laboratuvar Yönetimi</h3>
+    <button class="btn btn-primary" onclick="openModal()">Yeni Lab Ekle</button>
+</div>
+
+<table class="table table-hover bg-white shadow-sm rounded">
+    <thead class="table-dark">
+        <tr><th>ID</th><th>İsim</th><th>İşlemler</th></tr>
+    </thead>
+    <tbody id="labTableBody"></tbody>
+</table>
+
+<div class="modal fade" id="labModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header"><h5>Laboratuvar Formu</h5></div>
+            <div class="modal-body">
+                <input type="hidden" id="labId">
+                <input type="text" id="labName" class="form-control" placeholder="Lab İsmi">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary w-100" onclick="saveLab()">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function getLabs() {
+        const res = await fetch("/api/admin/labs");
+        const labs = await res.json();
+        document.getElementById("labTableBody").innerHTML = labs.map(l => `
+            <tr>
+                <td>${l.id}</td>
+                <td>${l.name}</td>
+                <td>
+                    <button class="btn btn-sm btn-warning" onclick="editLab(${l.id},'${l.name}')">Düzenle</button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteLab(${l.id})">Sil</button>
+                </td>
+            </tr>`).join("");
+    }
+
+    function openModal() {
+        document.getElementById("labId").value = "";
+        document.getElementById("labName").value = "";
+        new bootstrap.Modal(document.getElementById('labModal')).show();
+    }
+
+    function editLab(id, name) {
+        document.getElementById("labId").value = id;
+        document.getElementById("labName").value = name;
+        new bootstrap.Modal(document.getElementById('labModal')).show();
+    }
+
+    async function saveLab() {
+        const id = document.getElementById("labId").value;
+        const name = document.getElementById("labName").value;
+        const method = id ? "PUT" : "POST";
+        const url = id ? `/api/admin/labs/${id}` : "/api/admin/labs";
+
+        await fetch(url, {
+            method: method,
+            headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ name: name })
+        });
+        bootstrap.Modal.getInstance(document.getElementById('labModal')).hide();
+        getLabs();
+    }
+
+    async function deleteLab(id) {
+        if(confirm("Silmek istediğinize emin misiniz?")) {
+            await fetch("/api/admin/labs/"+id, { method:"DELETE" });
+            getLabs();
+        }
+    }
+
+    getLabs();
+</script>

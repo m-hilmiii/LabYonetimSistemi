@@ -1,0 +1,67 @@
+<h3 class="section-title"><i class="fas fa-tachometer-alt me-2 text-primary"></i>Dashboard</h3>
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card blue p-3" style="border-left: 4px solid #4e73df; border-radius: 10px;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Toplam Lab</div>
+                    <div class="fs-3 fw-bold" id="stat-labs">-</div>
+                </div>
+                <i class="fas fa-door-open fa-2x text-primary opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card green p-3" style="border-left: 4px solid #1cc88a; border-radius: 10px;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Toplam Bilgisayar</div>
+                    <div class="fs-3 fw-bold" id="stat-pcs">-</div>
+                </div>
+                <i class="fas fa-laptop fa-2x text-success opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card yellow p-3" style="border-left: 4px solid #f6c23e; border-radius: 10px;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">Açık Arızalar</div>
+                    <div class="fs-3 fw-bold" id="stat-issues">-</div>
+                </div>
+                <i class="fas fa-exclamation-triangle fa-2x text-warning opacity-50"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card red p-3" style="border-left: 4px solid #e74a3b; border-radius: 10px;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small">HDMI'sız PC</div>
+                    <div class="fs-3 fw-bold" id="stat-nohdmi">-</div>
+                </div>
+                <i class="fas fa-plug fa-2x text-danger opacity-50"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (async () => {
+        // Lab ve PC sayıları (Yeni modüler api'den)
+        const statRes = await fetch("/api/stats");
+        if(statRes.ok) {
+            const data = await statRes.json();
+            document.getElementById("stat-labs").innerText = data.labCount;
+            document.getElementById("stat-pcs").innerText = data.pcCount;
+            document.getElementById("stat-issues").innerText = data.issueCount;
+        }
+
+        // HDMI'sız PC sayısını hesaplamak için bilgisayarları çekiyoruz
+        const pcRes = await fetch("/api/bilgisayarlar");
+        if(pcRes.ok) {
+            const pcs = await pcRes.json();
+            document.getElementById("stat-nohdmi").innerText = pcs.filter(p => !p.hasHdmi).length;
+        }
+    })();
+</script>

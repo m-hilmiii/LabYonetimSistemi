@@ -1,0 +1,156 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="section-title mb-0">
+        <i class="fas fa-laptop me-2 text-primary"></i>Bilgisayar Tanımlama
+    </h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addPcModal">
+        <i class="fas fa-plus me-1"></i> Yeni PC Ekle
+    </button>
+</div>
+
+<div class="card p-3 shadow-sm border-0">
+    <table class="table table-hover align-middle mb-0">
+        <thead class="table-light">
+            <tr>
+                <th>ID</th>
+                <th>Demirbaş Kodu</th>
+                <th>Marka</th>
+                <th>İşlemci</th>
+                <th>RAM</th>
+                <th>HDMI</th>
+                <th>İnternet</th>
+                <th>Veyon</th>
+                <th>Lab ID</th>
+            </tr>
+        </thead>
+        <tbody id="pcTableBody">
+            <tr><td colspan="9" class="text-center text-muted py-3">Yükleniyor...</td></tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- YENİ BİLGİSAYAR MODALİ -->
+<div class="modal fade" id="addPcModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-laptop me-2"></i>Yeni Bilgisayar Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body row g-3">
+                <div class="col-6">
+                    <label class="form-label">Demirbaş Kodu</label>
+                    <input type="text" id="pcAssetCode" class="form-control" placeholder="Örn: LAB1-PC-01">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">Marka</label>
+                    <input type="text" id="pcBrand" class="form-control" placeholder="Örn: Dell, HP">
+                </div>
+                <div class="col-6">
+                    <label class="form-label">İşlemci</label>
+                    <input type="text" id="pcProcessor" class="form-control" placeholder="Örn: Intel Core i5">
+                </div>
+                <div class="col-3">
+                    <label class="form-label">RAM (GB)</label>
+                    <input type="number" id="pcRam" class="form-control" value="8">
+                </div>
+                <div class="col-4">
+                    <label class="form-label">Laboratuvar</label>
+                    <select id="pcLabId" class="form-select">
+                        <!-- Lab listesi JavaScript ile yüklenecek -->
+                    </select>
+                </div>
+                <div class="col-12 mt-4">
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="pcHasHdmi">
+                        <label class="form-check-label">HDMI Var</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="pcHasInternet" checked>
+                        <label class="form-check-label">İnternet Var</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="checkbox" id="pcHasVeyon">
+                        <label class="form-check-label">Veyon Yüklü</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                <button type="button" class="btn btn-primary" onclick="savePc()">
+                    <i class="fas fa-save me-1"></i> Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function getPcs() {
+        const res = await fetch("/api/bilgisayarlar");
+        const pcs = await res.json();
+        const tbody = document.getElementById("pcTableBody");
+        if (pcs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-3">Henüz bilgisayar eklenmedi.</td></tr>';
+            return;
+        }
+        tbody.innerHTML = pcs.map(pc => `
+            <tr>
+                <td>${pc.id}</td>
+                <td><code>${pc.assetCode || '-'}</code></td>
+                <td><strong>${pc.brand || '-'}</strong></td>
+                <td>${pc.processor || '-'}</td>
+                <td>${pc.ram} GB</td>
+                <td>${pc.hasHdmi ? '✅' : '❌'}</td>
+                <td>${pc.hasInternet ? '✅' : '❌'}</td>
+                <td>${pc.hasVeyon ? '✅' : '❌'}</td>
+                <td><span class="badge bg-primary">Lab-${pc.labId}</span></td>
+            </tr>
+        `).join("");
+    }
+
+    async function loadLabOptions() {
+        const res = await fetch("/api/admin/labs");
+        if(res.ok) {
+            const labs = await res.json();
+            const select = document.getElementById("pcLabId");
+            select.innerHTML = labs.map(l => `<option value="${l.id}">${l.name}</option>`).join("");
+        }
+    }
+
+    async function savePc() {
+        const pc = {
+            assetCode: document.getElementById("pcAssetCode").value,
+            brand: document.getElementById("pcBrand").value,
+            processor: document.getElementById("pcProcessor").value,
+            ram: parseInt(document.getElementById("pcRam").value),
+            labId: parseInt(document.getElementById("pcLabId").value),
+            hasHdmi: document.getElementById("pcHasHdmi").checked,
+            hasInternet: document.getElementById("pcHasInternet").checked,
+            hasVeyon: document.getElementById("pcHasVeyon").checked
+        };
+
+        const res = await fetch("/api/bilgisayar-ekle", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(pc)
+        });
+
+        if (res.ok) {
+            const modalEl = document.getElementById('addPcModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modalInstance.hide();
+            
+            // Modal backdrop cleanup if stuck
+            document.body.classList.remove('modal-open');
+            const backdrops = document.querySelectorAll('.modal-backdrop');
+            backdrops.forEach(b => b.remove());
+            
+            getPcs();
+        } else {
+            alert("Hata oluştu!");
+        }
+    }
+
+    getPcs();
+    loadLabOptions();
+</script>

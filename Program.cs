@@ -72,32 +72,8 @@ app.MapGet("/api/arizali-pcler", async (AppDbContext context) =>
 });
 
 // ================================================================
-// LAB ENDPOINT'LERİ
+// LAB ENDPOINT'LERİ (Modüllere Taşındı)
 // ================================================================
-
-// GET: Tüm labları bilgisayarlarıyla birlikte getir
-app.MapGet("/api/labs", async (AppDbContext context) =>
-{
-    return await context.Labs.Include(l => l.Computers).ToListAsync();
-    // Include: "Labları getirirken ona ait bilgisayarları da birlikte getir" demektir.
-});
-
-// GET: ID'ye göre tek lab
-app.MapGet("/api/labs/{id}", async (AppDbContext context, int id) =>
-{
-    var lab = await context.Labs.Include(l => l.Computers).FirstOrDefaultAsync(l => l.Id == id);
-    if (lab == null)
-        return Results.NotFound($"{id} numaralı lab bulunamadı.");
-    return Results.Ok(lab);
-});
-
-// POST: Yeni lab ekle (Admin)
-app.MapPost("/api/admin/labs", async (AppDbContext context, Lab yeniLab) =>
-{
-    context.Labs.Add(yeniLab);
-    await context.SaveChangesAsync();
-    return Results.Ok(yeniLab);
-});
 
 // ================================================================
 // ARIZA KAYDI ENDPOINT'LERİ
@@ -173,5 +149,10 @@ app.MapGet("/api/lab-istatistik", async (AppDbContext context) =>
         RameGoreSiralanmis = rameSirali
     };
 });
+
+// --- MODÜLER ENDPOINT KAYITLARI ---
+app.MapAuthEndpoints();
+app.MapStatEndpoints();
+app.MapLabEndpoints();
 
 app.Run();

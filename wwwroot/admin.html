@@ -306,7 +306,7 @@
 
     // --- LAB İŞLEMLERİ ---
     async function getLabs() {
-        const res = await fetch("/api/labs");
+        const res = await fetch("/api/admin/labs");
         const labs = await res.json();
         
         // 1. Tabloyu doldur
