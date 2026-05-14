@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Yönetim Sistemi</title>
+    <style>
+        /* --- GENEL SAYFA STİLİ --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1a1a2e;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #00d4ff;
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .alt-baslik {
+            text-align: center;
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        /* --- BUTON STİLİ --- */
+        .yenile-btn {
+            display: block;
+            margin: 0 auto 30px auto;
+            padding: 10px 30px;
+            background-color: #00d4ff;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .yenile-btn:hover {
+            background-color: #009bb5;
+        }
+
+        /* --- KART ALANI --- */
+        #listeKonumu {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        /* --- KART GENEL STİLİ --- */
+        .pc-kart {
+            width: 220px;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid transparent;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .pc-kart:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+        }
+
+        /* --- GÖREV 3: ARIZALI VE SAĞLAM KARTI STİLLERİ --- */
+        .arizali {
+            background-color: #3d1a1a;
+            border: 3px solid #ff4444;  /* Kalın kırmızı kenarlık */
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.3);
+        }
+
+        .saglam {
+            background-color: #1a3d1a;
+            border: 3px solid #44ff88;  /* Kalın yeşil kenarlık */
+            box-shadow: 0 4px 15px rgba(68, 255, 136, 0.3);
+        }
+
+        /* --- KART İÇİ METİNLER --- */
+        .pc-kart h3 {
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            color: #ffffff;
+        }
+
+        .pc-kart p {
+            margin: 5px 0;
+            font-size: 14px;
+            color: #cccccc;
+        }
+
+        .durum-etiketi {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .arizali .durum-etiketi {
+            background-color: #ff4444;
+            color: white;
+        }
+
+        .saglam .durum-etiketi {
+            background-color: #44ff88;
+            color: #1a1a2e;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🖥️ Laboratuvar Yönetim Sistemi</h1>
+    <p class="alt-baslik">Veritabanındaki bilgisayarlar aşağıda listelenmektedir.</p>
+
+    <button class="yenile-btn" onclick="verileriYukle()">🔄 Listeyi Yenile</button>
+
+    <div id="listeKonumu">
+        <!-- Bilgisayar kartları buraya JavaScript ile eklenecek -->
+    </div>
+
+    <script>
+        async function verileriYukle() {
+            // 1. ADIM: API'ye istek at
+            // fetch("/api/..."): "Git şu adresteki veriyi getir" der.
+            // await: "Veri gelene kadar burada bekle, alt satıra geçme" demektir.
+            const response = await fetch("/api/bilgisayarlar");
+
+            // 2. ADIM: Gelen ham veriyi JSON (Nesne) formatına çevir
+            const veriler = await response.json();
+
+            // 3. ADIM: HTML tarafını temizle
+            const div = document.getElementById("listeKonumu");
+            div.innerHTML = ""; // Eski listeyi sil
+
+            // 4. ADIM: Her bilgisayar için bir kart oluştur
+            veriler.forEach(pc => {
+                const kart = document.createElement("div");
+
+                // bozukMu durumuna göre CSS sınıfı atıyoruz (Ternary Operator)
+                kart.className = pc.bozukMu ? "pc-kart arizali" : "pc-kart saglam";
+
+                kart.innerHTML = `
+                    <h3>💻 ${pc.marka}</h3>
+                    <p>🔧 <strong>İşlemci:</strong> ${pc.processor}</p>
+                    <p>🧠 <strong>RAM:</strong> ${pc.ram} GB</p>
+                    <span class="durum-etiketi">
+                        ${pc.bozukMu ? "⚠️ ARIZALI" : "✅ ÇALIŞIYOR"}
+                    </span>
+                `;
+
+                div.appendChild(kart);
+            });
+        }
+
+        // Sayfa ilk açıldığında verileri otomatik getir
+        verileriYukle();
+    </script>
+
+</body>
+</html>

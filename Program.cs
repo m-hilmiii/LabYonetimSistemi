@@ -26,6 +26,13 @@ using (var scope = app.Services.CreateScope())
 }
 
 // --- 2. MIDDLEWARE (ARA YAZILIM) AYARLARI ---
+
+app.UseDefaultFiles();
+// Tarayıcıya "localhost:xxxx" yazıldığında wwwroot/index.html'i otomatik bulur ve açar.
+
+app.UseStaticFiles();
+// wwwroot klasörü içindeki dosyaların (html, css, js) dışarıya sunulmasına izin verir.
+
 app.UseSwagger();
 app.UseSwaggerUI(); // Swagger arayüzünü /swagger adresinde açar
 
