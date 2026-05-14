@@ -11,9 +11,8 @@ var app = builder.Build();
 // İnşaatçının hazırladığı ayarlar ile gerçek uygulamayı (app) oluşturur.
 
 // --- 2. MIDDLEWARE (ARA YAZILIM) AYARLARI ---
-// Swagger'ı etkinleştiriyoruz
 app.UseSwagger();
-app.UseSwaggerUI();
+app.UseSwaggerUI(); // Swagger arayüzünü /swagger adresinde açar
 
 // Veritabanı öğrenene kadar kullanacağımız geçici listemiz (RAM üzerinde tutulur)
 var pcListesi = new List<Computer>
