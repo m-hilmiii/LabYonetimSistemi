@@ -43,7 +43,16 @@ app.MapPost("/api/bilgisayar-ekle", (Computer yeniPc) => {
     pcListesi.Add(yeniPc);
     // MapPost: Tarayıcıdan değil, bir araç (Postman/Swagger) üzerinden gönderilen veriyi yakalar.
     // (Computer yeniPc): Gelen JSON verisini otomatik olarak Computer nesnesine dönüştürür.
-    return $"Yeni bilgisayar ({yeniPc.Brand}) başarıyla eklendi!";
+    return $"Yeni bilgisayar ({yeniPc.Marka}) başarıyla eklendi!";
+});
+
+// --- GET: ARIZALI BİLGİSAYARLARI GETİR (Görev 1) ---
+app.MapGet("/api/arizali-pcler", () =>
+{
+    var arizalilar = pcListesi.Where(pc => pc.BozukMu == true).ToList();
+    // .Where(pc => pc.BozukMu == true): Listedeki her bilgisayarı kontrol eder,
+    // BozukMu alanı true olanları yeni bir listeye alır ve döndürür.
+    return arizalilar;
 });
 
 app.Run();
