@@ -1,0 +1,6 @@
+@LabYonetimSistemi_HostAddress = http://localhost:5270
+
+GET {{LabYonetimSistemi_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
